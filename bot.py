@@ -465,14 +465,17 @@ async def on_message(message):
 		elif (cmd == 'end') or (cmd == 'stop'):
 			serverVoices[theServer].end()
 		elif cmd == 'volume' or cmd == 'vol':
-			vol = command.split(' ')[1]
-			if not vol.isdigit():
-				await message.channel.send("Volume must be a digit 1-60")
-				return
-			if int(vol) > 60:
-				vol = 60
-			await channel.send("Setting Volume to " + str(vol) + "%")
-			serverVoices[theServer].source.volume = float(int(vol) / 100)
+			if len(command.split(' ')) < 2:
+				await message.channel.send("Need a volume to set!")
+			else:
+				vol = command.split(' ')[1]
+				if not vol.isdigit():
+					await message.channel.send("Volume must be a digit 1-60")
+					return
+				if int(vol) > 60:
+					vol = 60
+				await channel.send("Setting Volume to " + str(vol) + "%")
+				serverVoices[theServer].source.volume = float(int(vol) / 100)
 		elif cmd == 'queue':
 			await serverVoices[theServer].printQueue(message)
 		else:
