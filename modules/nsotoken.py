@@ -2,6 +2,7 @@ from __future__ import print_function
 import mysqlhandler, nsohandler
 import requests, json, re, sys, uuid, time
 import os, base64, hashlib, random, string
+from datetime import datetime, timedelta
 
 class Nsotoken():
 	def __init__(self, client, mysqlhandler):
@@ -31,14 +32,34 @@ class Nsotoken():
 			await self.sqlBroker.rollback(cur)
 			await message.channel.send("Something went wrong! If you want to report this, join my support discord and let the devs know what you were doing!")
 
+	async def test_iksm_time(self, userid):
+		cur = await self.sqlBroker.connect()
+		stmt = "SELECT iksm_time FROM tokens WHERE clientid = %s"
+		await cur.execute(stmt, (str(userid), ))
+		date = await cur.fetchall()
+		await self.sqlBroker.commit(cur)
+		date = date[0][0]
+		if date is None:
+			print("IKSM Date Null")
+			return True
+
+		expiredate = date + timedelta(minutes=7200)
+		print("IKSM date test: " + str(date) + " and expiry " + str(expiredate))
+		if datetime.now() < expiredate:
+			return False
+		else:
+			return True
+
 	async def addToken(self, message, token, session_token):
+		now = datetime.now()
+		formatted_date = now.strftime('%Y-%m-%d %H:%M:%S')
 		cur = await self.sqlBroker.connect()
 		if await self.checkDuplicate(str(message.author.id), cur):
-			stmt = "UPDATE tokens SET token = %s, session_token = %s WHERE clientid = %s"
-			input = (str(token), str(session_token), str(message.author.id),)
+			stmt = "UPDATE tokens SET token = %s, session_token = %s, iksm_time = %s WHERE clientid = %s"
+			input = (str(token), str(session_token), formatted_date, str(message.author.id),)
 		else:
-			stmt = "INSERT INTO tokens (clientid, token, session_token) VALUES(%s, %s, %s)"
-			input = (str(message.author.id), token, session_token,)
+			stmt = "INSERT INTO tokens (clientid, iksm_time, token, session_time, session_token) VALUES(%s, %s, %s, %s, %s)"
+			input = (str(message.author.id), formatted_date, token, formatted_date, session_token,)
 
 		await cur.execute(stmt, input)
 		if cur.lastrowid != None:
@@ -48,15 +69,19 @@ class Nsotoken():
 			await self.sqlBroker.rollback(cur)
 			return False
 
-	async def get_iksm_token_mysql(self, userid):
-		cur = await self.sqlBroker.connect()
-		stmt = "SELECT token FROM tokens WHERE clientid = %s"
-		await cur.execute(stmt, (str(userid),))
-		session_token = await cur.fetchall()
-		await self.sqlBroker.commit(cur)
-		if len(session_token) == 0:
-			return None
-		return session_token[0][0]
+	async def get_iksm_token_mysql(self, message):
+		if await self.test_iksm_time(message.author.id):
+			return await self.do_iksm_refresh(message)
+		else:
+			cur = await self.sqlBroker.connect()
+			stmt = "SELECT token FROM tokens WHERE clientid = %s"
+			await cur.execute(stmt, (str(message.author.id), ))
+			iksm = await cur.fetchall()
+
+			await self.sqlBroker.commit(cur)
+			if len(iksm) == 0:
+				return None
+			return iksm[0][0]
 
 	async def get_session_token_mysql(self, userid):
 		cur = await self.sqlBroker.connect()

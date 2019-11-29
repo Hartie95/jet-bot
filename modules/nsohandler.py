@@ -213,18 +213,12 @@ class nsoHandler():
 			return False
 
 	async def getNSOJSON(self, message, header, url):
-		Session_token = await self.nsotoken.get_iksm_token_mysql(message.author.id)
-		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=Session_token))
-		thejson = json.loads(results_list.text)	
+		iksm = await self.nsotoken.get_iksm_token_mysql(message)
+		if iksm is None:
+			return None
 
-		if 'AUTHENTICATION_ERROR' in str(thejson):
-			iksm = await self.nsotoken.do_iksm_refresh(message)
-			results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm))
-			thejson = json.loads(results_list.text)
-			if 'AUTHENTICATION_ERROR' in str(thejson):
-				return None
-
-		return thejson
+		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm))
+		return json.loads(results_list.text)	
 
 	async def weaponParser(self, message, weapid):
 		if not await self.checkDuplicate(message.author.id):

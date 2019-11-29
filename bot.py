@@ -286,7 +286,7 @@ async def doEval(message):
 @client.event
 async def on_message(message):
 	global serverVoices, serverAdmins, soundsDir, serverUtils, mysqlHandler
-	global nsoHandler, owners, commandParser, doneStartup
+	global nsoHandler, owners, commandParser, doneStartup, nsoTokens
 
 	# Filter out bots and system messages or handling of messages until startup is done
 	if message.author.bot or message.type != discord.MessageType.default or not doneStartup:
