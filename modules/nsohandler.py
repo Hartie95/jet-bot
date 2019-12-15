@@ -218,6 +218,9 @@ class nsoHandler():
 			return None
 
 		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm))
+		if 'AUTHENTICATION_ERROR' in str(results_list.text):
+			results_list = requests.get(url, headers=header, cookies=dict(iksm_session=await self.nsotoken.do_iksm_refresh(message)))
+
 		return json.loads(results_list.text)	
 
 	async def weaponParser(self, message, weapid):

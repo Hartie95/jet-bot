@@ -324,6 +324,7 @@ class Nsotoken():
 
 		r = requests.post("https://api-lp1.znc.srv.nintendo.net/v2/Game/GetWebServiceToken", headers=head, json=body)
 		token = json.loads(r.text)
+		print(str(r.text))
 		if '200' not in str(r):
 			print("NSO ERROR IN GETWEBSERVICETOKEN: " + str(token))
 			return None
@@ -348,4 +349,5 @@ class Nsotoken():
 			return None
 		else:
 			print("Got a token!")
+			print(str(r.cookies))
 			return r.cookies["iksm_session"]
